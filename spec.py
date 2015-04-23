@@ -20,6 +20,7 @@
 #     env = {}
 
 spec = {
+    'name' : "3 node net",
     'default network name' : "mgmt-net",
     'external network name' : "ext-net1",
     'keypair' : "dell4",
