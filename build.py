@@ -6,6 +6,7 @@ import os
 from pprint import pprint
 from neutronclient.v2_0 import client
 import novaclient.client
+from neutroncreate import net_build
 # from spec import spec
 
 spec_error = False
@@ -144,11 +145,11 @@ host_builder = {}
 if ( spec['Networks']):
     print " building networks"
     for net in spec['Networks']:
-        print "building network ", net['name'] , net['subnet'], net.get('gw')
+        print "building network ", net['name'] , net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'], net['physical_network']
         if (net['name'] in net_list):
             spec_error = True
             print "Build Error - network %s is already defined" % net['name']
-        net_builder[net['name']] =  (net['subnet'], net.get('gw'))
+        net_builder[net['name']] =  (net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'],net['physical_network'])
 
 if ( spec['Hosts']):
     print " building servers"
@@ -178,9 +179,19 @@ if (spec_error):
     sys.exit(1)
 
 print "building networks"
-for k,(s,g) in net_builder.items():
-    print "net %s : (%s,%s)" % (k,s,g)
+for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
+    print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
+    net_id = net_build(name,phynet,vlan,start,end,subnet,gw)
+    # net_id = net_build("net201","vlannet",201,"192.168.1.1","192.168.1.2"))
+    net_list[name] = net_id
+
 
 print "building servers"
 for k,(i,f,ns) in host_builder.items():
     print "host %s : (%s,%s)" % (k,i,f)
+    nics=[]
+    for (name,ip) in ns:
+        id=net_list[name]
+        nics.append({'net-id': id})
+    pprint ({ 'name':k, 'image':i, 'flavor':f, 'key_name':spec['keypair'], 'nics':nics})
+    instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics)

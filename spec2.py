@@ -1,16 +1,15 @@
 
 spec = {
-    'name' : "faulty template",
-    'default network name' : "mgmt-nxt",
-    'external network name' : "ext-net1",
-    'keypair' : "dell5",
+    'name' : "Mu's template",
+    'default network name' : "demo-net3",
+    'external network name' : "ext-net3",
+    'keypair' : "dell4",
     'Networks' : [
-        { 'name' : "lan1" , 'subnet' :" 192.168.1.0/24" , 'gw': "192.168.1.1" },
-        { 'name' : "lan2" , 'subnet' :" 192.168.2.0/24" }
+        { 'name' : "lan201" , "start": "192.168.1.201", "end": "192.168.1.202", "subnet" :" 192.168.1.0/24", "vlan": 201 },
+        { 'name' : "lan202" , "start": "192.168.1.202", "end": "192.168.1.203", "subnet" :" 192.168.1.0/24", "vlan": 202 }
     ],
     'Hosts' : [
-        { 'name' : "foo" , 'image' : "centos7" , 'flavor':"m1.large" , 'net' : [ ("lan1" , "192.168.1.1") ] , 'env' : ["role=client" , "target=bar"] },
-        { 'name' : "bar" , 'image' : "centos7" , 'flavor':"m1.large" , 'net' : [ ("lan3" , "192.168.1.2") , ("lan2" , "192.168.2.2") ] , 'env' : ["role=middleware" , "target=baz"] },
-        { 'name' : "baz" , 'image' : "centos7" , 'flavor':"m1.large" , 'net' : [ ("lan2" , "192.168.2.2") ] , 'env' : ["role=server"] }
+        { 'name' : "h201" , 'image' : "cirros" , 'flavor':"m1.small" , 'net' : [ ("lan201" , "192.168.1.201") ] },
+        { 'name' : "h202" , 'image' : "cirros" , 'flavor':"m1.small" , 'net' : [ ("lan202" , "192.168.1.202") ] },
     ]
 }
