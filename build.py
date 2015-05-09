@@ -7,7 +7,6 @@ from pprint import pprint
 from neutronclient.v2_0 import client
 import novaclient.client
 from neutroncreate import net_build
-# from spec import spec
 
 spec_error = False
 
@@ -39,10 +38,6 @@ except:
 credentials = get_credentials()
 neutron = client.Client(**credentials)
 
-def netlist():
-    netw = neutron.list_networks()
-    pprint(netw['networks'])
-
 nova = novaclient.client.Client("1.1", auth_url=env['OS_AUTH_URL'],
                                 username=env['OS_USERNAME'],
                                 api_key=env['OS_PASSWORD'],
@@ -61,46 +56,6 @@ for net in neutron.list_networks()['networks']:
   net_list[net['name']] = net['id']
 
 
-class BuildError(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-    def __str__(self):
-        return repr(self.msg)
-
-def boot_template(image,flavor,keypair):
-    try:
-        _image=nova.images.find(name=image)
-        if (not _image):
-            raiseBuildError("image %s not found" % image)
-        _flavor=nova.flavors.find(name=flavor)
-        if (not _flavor):
-            raiseBuildError("flavor %s not found" % flavor)
-        _keypair=nova.keypairs.find(name=keypair)
-        if (not _keypair):
-            raiseBuildError("keypair %s not found" % keypair)
-        return (_image,_flavor,_keypair)
-    except novaclient.exceptions.NotFound:
-        print "Not found: " , sys.exc_value
-        return None
-    except:
-        traceback.print_exc()
-        print "Unexpected error:", sys.exc_info()[0]
-
-
-def boot ():
-    print "boot"
-    print(nova.servers.list())
-    image = nova.images.find(name="centos7")
-    flavor = nova.flavors.find(name="m1.large")
-    net = nova.networks.find(label="mgmt-net")
-    nics = [{'net-id': net.id}]
-    instance = nova.servers.create(name="c99", image=image, flavor=flavor, key_name="dell4", nics=nics)
-
-    print instance.id
-    print("Sleeping for 5s after create command")
-    time.sleep(5)
-    print(nova.servers.list())
-
 def check_keypair(name):
     try:
         return not ( nova.keypairs.get(name).deleted )
@@ -109,17 +64,6 @@ def check_keypair(name):
     except:
         print "Unexpected error:", sys.exc_info()[0]
         raise
-
-# boot()
-# net()
-# pprint.pprint ( nova )
-
-# netlist()
-# srv_template = boot_template("centos7","m1.large","dell4")
-# pprint(srv_template)
-# srv_template2 = boot_template("centos6","m1.big","dell9")
-# pprint(srv_template2)
-
 
 print "Checking global parameters"
 
@@ -182,8 +126,10 @@ print "building networks"
 for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
     print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
     net_id = net_build(name,phynet,vlan,start,end,subnet,gw)
-    # net_id = net_build("net201","vlannet",201,"192.168.1.1","192.168.1.2"))
-    net_list[name] = net_id
+    if (net_id):
+        net_list[name] = net_id
+    else:
+        print "error: failed to build network %s" % name
 
 
 print "building servers"
