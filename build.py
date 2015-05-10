@@ -32,14 +32,6 @@ from neutroncreate import net_build
 
 spec_error = False
 
-def get_credentials():
-    d = {}
-    d['username'] = os.environ['OS_USERNAME']
-    d['password'] = os.environ['OS_PASSWORD']
-    d['auth_url'] = os.environ['OS_AUTH_URL']
-    d['tenant_name'] = os.environ['OS_TENANT_NAME']
-    return d
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--complete','-c', action='store_true')
 parser.add_argument('--dryrun','-n', action='store_true')
@@ -47,8 +39,6 @@ parser.add_argument('--delete', '-d', action='count')
 parser.add_argument('specfile')
 args=parser.parse_args()
 specfile=args.specfile
-print "the spec file name is %s" % specfile
-
 
 if ( not os.access(specfile,os.R_OK)):
     print "spec file not readable"
@@ -67,29 +57,15 @@ except:
     print "couldn't read the spec file '%s'" % specfile
     sys.exit(1)
 
-credentials = get_credentials()
-neutron = client.Client(**credentials)
-
-nova = novaclient.client.Client("1.1", auth_url=env['OS_AUTH_URL'],
-                                username=env['OS_USERNAME'],
-                                api_key=env['OS_PASSWORD'],
-                                project_id=env['OS_TENANT_NAME'],
-                                # region_name=env['OS_REGION_NAME']
-                                )
+neutron = client.Client( username = os.environ['OS_USERNAME'], password = os.environ['OS_PASSWORD'], auth_url = os.environ['OS_AUTH_URL'], tenant_name = os.environ['OS_TENANT_NAME'])
+nova    = novaclient.client.Client("1.1", auth_url=env['OS_AUTH_URL'], username=env['OS_USERNAME'], api_key=env['OS_PASSWORD'], project_id=env['OS_TENANT_NAME'])
 
 server_list = {}
-net_list = {}
-
 for server in nova.servers.list():
-    # print dir(server)
-    # print server.name , server.id
     server_list[server.name] = server.id
 
-#pprint(server_list)
-#sys.exit(0)
-
+net_list = {}
 for net in neutron.list_networks()['networks']:
-  # print net['name'], net['id']
   net_list[net['name']] = net['id']
 
 
