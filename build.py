@@ -69,12 +69,12 @@ def server_delete(name):
     for s in servers:
         if s.name == name:
             response = nova.servers.delete(s)
-            print "delete %s response was %s" % (name, dir(response))
+            # print "delete %s response was %s" % (name, dir(response))
+            print "delete %s" % name, response
 
 net_list = {}
 for net in neutron.list_networks()['networks']:
   net_list[net['name']] = net['id']
-
 
 def check_keypair(name):
     try:
@@ -172,26 +172,40 @@ if (args.dryrun):
     sys.exit(0)
 
 
-print "processing networks"
-for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
-    print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
-    net_id = net_build(name,phynet,vlan,start,end,subnet,gw)
-    if (net_id):
-        net_list[name] = net_id
+def process_networks():
+    print "processing networks"
+    if (args.delete):
+        for name in net_builder.keys():
+            neutron.delete_network(net_list[name])
     else:
-        print "error: failed to build network %s" % name
+        for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
+            print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
+            net_id = net_build(name,phynet,vlan,start,end,subnet,gw)
+            if (net_id):
+                net_list[name] = net_id
+            else:
+                print "error: failed to build network %s" % name
 
 
-print "processing servers"
+def process_servers():
+    print "processing servers"
+    if (args.delete):
+        for k in host_builder.keys():
+            server_delete(k)
+    else:
+        for k,(i,f,ns) in host_builder.items():
+            print "host %s : (%s,%s)" % (k,i,f)
+            nics=[]
+            for (name,ip) in ns:
+                id=net_list[name]
+                nics.append({'net-id': id})
+            # pprint ({ 'name':k, 'image':i, 'flavor':f, 'key_name':spec['keypair'], 'nics':nics})
+            instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics)
+
+
 if (args.delete):
-    for k in host_builder.keys():
-        server_delete(k)
+    process_servers()
+    process_networks()
 else:
-    for k,(i,f,ns) in host_builder.items():
-        print "host %s : (%s,%s)" % (k,i,f)
-        nics=[]
-        for (name,ip) in ns:
-            id=net_list[name]
-            nics.append({'net-id': id})
-        # pprint ({ 'name':k, 'image':i, 'flavor':f, 'key_name':spec['keypair'], 'nics':nics})
-        instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics)
+    process_networks()
+    process_servers()
