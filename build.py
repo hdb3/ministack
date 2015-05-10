@@ -200,7 +200,7 @@ def process_servers():
                 id=net_list[name]
                 nics.append({'net-id': id})
             # pprint ({ 'name':k, 'image':i, 'flavor':f, 'key_name':spec['keypair'], 'nics':nics})
-            instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics)
+            instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics, config_drive=True)
 
 
 if (args.delete):
