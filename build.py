@@ -33,12 +33,19 @@ from neutroncreate import net_build
 spec_error = False
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--complete','-c', action='store_true')
-parser.add_argument('--dryrun','-n', action='store_true')
-parser.add_argument('--delete', '-d', action='count')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--dryrun','-n', action='store_true')
+group.add_argument('--build','-b', action='store_true')
+group.add_argument('--delete', '-d', action='count')
+group.add_argument('--suspend', '-s', action='store_true')
+group.add_argument('--resume', '-r', action='store_true')
+group.add_argument('--complete','-c', action='store_true')
 parser.add_argument('specfile')
 args=parser.parse_args()
 specfile=args.specfile
+
+# build is the default action
+build = not (args.resume or args.suspend or args.complete or args.dryrun or args.delete)
 
 if ( not os.access(specfile,os.R_OK)):
     print "spec file not readable"
@@ -63,13 +70,29 @@ nova    = novaclient.client.Client("2", auth_url=env['OS_AUTH_URL'], username=en
 servers = nova.servers.list()
 server_list = {}
 for server in servers:
-    server_list[server.name] = server.id
+    server_list[server.name] = (server.id,server.status)
+    # print "server %s %s %s" % (server.name,server.id,server.status)
+
+def server_suspend(name):
+    for s in servers:
+        if s.name == name:
+            (id,status) = server_list[name]
+            if (status == 'ACTIVE'):
+                response = nova.servers.suspend(s)
+                print "suspend %s" % name, response
+            else:
+                print "Can't suspend server %s  in state %s  "  % (name,status)
+
+def server_resume(name):
+    for s in servers:
+        if s.name == name:
+            response = nova.servers.resume(s)
+            print "resume %s" % name, response
 
 def server_delete(name):
     for s in servers:
         if s.name == name:
             response = nova.servers.delete(s)
-            # print "delete %s response was %s" % (name, dir(response))
             print "delete %s" % name, response
 
 net_list = {}
@@ -107,17 +130,22 @@ if (not args.delete):
 net_builder = {}
 host_builder = {}
 
-if ( spec['Networks']):
+if (args.resume or args.suspend):
+    pass
+elif ( not spec['Networks']):
+    print "Error: no Networks in spec file"
+    sys.exit(1)
+else:
     print "processing networks"
     for net in spec['Networks']:
         if (not args.delete):
             print "building network ", net['name'] , net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'], net['physical_network']
             if (net['name'] in net_list):
-                if (args.complete):
-                    print "Build warning - network %s is already defined" % net['name']
-                else:
+                if (args.dryrun or args.build):
                     spec_error = True
                     print "Build Error - network %s is already defined" % net['name']
+                else:
+                    print "network %s exists" % net['name']
             else:
                 net_builder[net['name']] =  (net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'],net['physical_network'])
         elif (args.delete > 1):
@@ -127,15 +155,17 @@ if ( spec['Networks']):
             else:
                 print "Can't delete non-existent network %s" % net['name']
 
-if ( spec['Hosts']):
+if ( not spec['Hosts']):
+    print "Warning - no hosts section in spec file"
+else:
     print "processing servers"
     for host in spec['Hosts']:
-        if (not args.delete):
+        if (args.build or args.dryrun or args.complete):
             print "building host ", host['name'] , host['image'], host['flavor'], host.get('net'), host.get('env')
-            print "checking host name ", host['name']
+            # print "checking host name ", host['name']
             if (host['name'] in server_list):
                 if (args.complete):
-                    print "Build warning - host %s is already defined" % host['name']
+                    print "host %s exists" % host['name']
                 else:
                     spec_error = True
                     print "Build Error - host %s is already defined" % host['name']
@@ -158,10 +188,10 @@ if ( spec['Hosts']):
                 host_builder[host['name']] = (image,flavor,nets)
         else:
             if (host['name'] in server_list):
-                print "deleting host %s" % host['name']
+                print "processing host %s" % host['name']
                 host_builder[host['name']] = None
             else:
-                print "not deleting host %s (server does not exist)" % host['name']
+                print "not processing host %s (server does not exist)" % host['name']
 
 if (spec_error):
     print "not building cluster due to spec errors"
@@ -192,6 +222,12 @@ def process_servers():
     if (args.delete):
         for k in host_builder.keys():
             server_delete(k)
+    elif (args.suspend):
+        for k in host_builder.keys():
+            server_suspend(k)
+    elif (args.resume):
+        for k in host_builder.keys():
+            server_resume(k)
     else:
         for k,(i,f,ns) in host_builder.items():
             print "host %s : (%s,%s)" % (k,i,f)
@@ -203,9 +239,11 @@ def process_servers():
             instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics, config_drive=True)
 
 
-if (args.delete):
+if (args.delete > 1):
     process_servers()
     process_networks()
-else:
+elif (args.build or args.complete):
     process_networks()
+    process_servers()
+else:
     process_servers()

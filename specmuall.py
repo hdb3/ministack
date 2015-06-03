@@ -23,8 +23,13 @@ spec = {
         { 'name' : "lan216" , "start": "192.168.1.216", "end": "192.168.1.217", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 216, "physical_network": "vlannet" },
         { 'name' : "lan217" , "start": "192.168.1.217", "end": "192.168.1.218", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 217, "physical_network": "vlannet" },
         { 'name' : "lan218" , "start": "192.168.1.218", "end": "192.168.1.219", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 218, "physical_network": "vlannet" },
-        { 'name' : "lan219" , "start": "192.168.1.219", "end": "192.168.1.221", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 219, "physical_network": "vlannet" },
+        { 'name' : "lan219" , "start": "192.168.1.219", "end": "192.168.1.220", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 219, "physical_network": "vlannet" },
         { 'name' : "lan220" , "start": "192.168.1.220", "end": "192.168.1.221", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 220, "physical_network": "vlannet" },
+        { 'name' : "lan221" , "start": "192.168.1.221", "end": "192.168.1.222", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 221, "physical_network": "vlannet" },
+        { 'name' : "lan222" , "start": "192.168.1.222", "end": "192.168.1.223", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 222, "physical_network": "vlannet" },
+        { 'name' : "lan223" , "start": "192.168.1.223", "end": "192.168.1.224", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 223, "physical_network": "vlannet" },
+        { 'name' : "lan224" , "start": "192.168.1.224", "end": "192.168.1.225", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 224, "physical_network": "vlannet" },
+        { 'name' : "lan225" , "start": "192.168.1.225", "end": "192.168.1.226", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 225, "physical_network": "vlannet" },
     ],
     'Hosts' : [
         { 'name' : "h201" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan201" , "192.168.1.201") ] },
@@ -47,5 +52,10 @@ spec = {
         { 'name' : "h218" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan218" , "192.168.1.218") ] },
         { 'name' : "h219" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan219" , "192.168.1.219") ] },
         { 'name' : "h220" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan220" , "192.168.1.220") ] },
+        { 'name' : "h221" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan221" , "192.168.1.221") ] },
+        { 'name' : "h222" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan222" , "192.168.1.222") ] },
+        { 'name' : "h223" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan223" , "192.168.1.223") ] },
+        { 'name' : "h224" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan224" , "192.168.1.224") ] },
+        { 'name' : "h225" , 'image' : "qtest-template" , 'flavor':"m1.small" , 'net' : [ ("lan225" , "192.168.1.225") ] },
     ]
 }
