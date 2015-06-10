@@ -45,6 +45,35 @@ def subnet_template(name,network_id,start,end,subnet,gw):
          } ]
     }
 
+def port_build(network_id, ip_address):
+    body_value = {
+        "port": {
+        "admin_state_up": True,
+        "name": "port1",
+        "network_id": network_id,
+        "fixed_ips": [
+            {
+                # "subnet_id": "a0304c3a-4f08-4c43-88af-d796509c97d2",
+                "ip_address": ip_address
+            }
+        ],
+        }
+    }
+    response = neutron.create_port(body=body_value)
+    # pprint(response)
+    return response['port']['id']
+
+def net_delete(net_id):
+    port_list = neutron.list_ports()
+    for port in port_list['ports']:
+        # pprint(port)
+        if port['network_id'] == net_id:
+            port_id = port['id']
+            print "deleting port " , port_id
+            neutron.delete_port(port_id)
+    print "deleting net  " , net_id
+    neutron.delete_network(net_id)
+
 def net_build(name,network,vlan,start,end,subnet,gw):
     try:
         net = net_template(name,network,vlan)

@@ -28,7 +28,7 @@ import argparse
 from pprint import pprint
 from neutronclient.v2_0 import client
 import novaclient.client
-from neutroncreate import net_build
+from neutroncreate import net_build,net_delete,port_build
 
 spec_error = False
 
@@ -206,7 +206,8 @@ def process_networks():
     print "processing networks"
     if (args.delete):
         for name in net_builder.keys():
-            neutron.delete_network(net_list[name])
+            # neutron.delete_network(net_list[name])
+            net_delete(net_list[name])
     else:
         for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
             print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
@@ -234,7 +235,9 @@ def process_servers():
             nics=[]
             for (name,ip) in ns:
                 id=net_list[name]
-                nics.append({'net-id': id})
+                # nics.append({'net-id': id})
+                port_id = port_build(id,ip)
+                nics.append({'port-id': port_id})
             # pprint ({ 'name':k, 'image':i, 'flavor':f, 'key_name':spec['keypair'], 'nics':nics})
             instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics, config_drive=True)
 
