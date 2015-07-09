@@ -49,7 +49,7 @@ def port_build(network_id, ip_address):
     body_value = {
         "port": {
         "admin_state_up": True,
-        "name": "port1",
+        # "name": "port1",
         "network_id": network_id,
         "fixed_ips": [
             {
