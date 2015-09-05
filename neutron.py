@@ -1,7 +1,7 @@
 from neutronclient.v2_0 import client
 import os
 import traceback
-from pprint import pprint
+# from pprint import pprint
 
 
 class Neutron:
@@ -11,49 +11,6 @@ class Neutron:
                                       tenant_name = credentials['project'],
                                       auth_url = auth_url)
         self.networks = self.neutron.list_networks()['networks']
-
-    def net_template(name,network,vlan):
-        if vlan == 0: # this is a pure virtual network, possibly with a NATed external network
-            return  {
-                "network":
-                    {
-                    "name": name,
-                    "admin_state_up": True,
-                    "shared": True,
-                    "router:external": False,
-                    # "provider:network_type": "vlan"
-                    }
-            }
-        else:
-            return  {
-                "network":
-                    {
-                    "name": name,
-                    "admin_state_up": True,
-                    "shared": True,
-                    "router:external": False,
-                    "provider:network_type": "vlan",
-                    "provider:segmentation_id": vlan,
-                    "provider:physical_network": network
-                    }
-            }
-    
-    def subnet_template(name,network_id,start,end,subnet,gw):
-        return {
-        "subnets": [
-            {
-                "name": name,
-                "cidr": subnet,
-                "ip_version": 4,
-                "gateway_ip": None,
-                "enable_dhcp": True,
-                "dns_nameservers": ["8.8.8.8"],
-                "host_routes": [ {"destination": "0.0.0.0/0", "nexthop": gw} ],
-                "name" : name,
-                "network_id" : network_id,
-                "allocation_pools" : [ { "start": start, "end": end } ]
-             } ]
-        }
     
     def port_build(self,network_id, ip_address):
         body_value = {
@@ -85,15 +42,58 @@ class Neutron:
         self.neutron.delete_network(net_id)
     
     def net_build(self,name,network,vlan,start,end,subnet,gw):
+
+        def net_template(name,network,vlan):
+            if vlan == 0: # this is a pure virtual network, possibly with a NATed external network
+                return  {
+                    "network":
+                        {
+                        "name": name,
+                        "admin_state_up": True,
+                        "shared": True,
+                        "router:external": False,
+                        # "provider:network_type": "vlan"
+                        }
+                }
+            else:
+                return  {
+                    "network":
+                        {
+                        "name": name,
+                        "admin_state_up": True,
+                        "shared": True,
+                        "router:external": False,
+                        "provider:network_type": "vlan",
+                        "provider:segmentation_id": vlan,
+                        "provider:physical_network": network
+                        }
+                }
+        
+        def subnet_template(name,network_id,start,end,subnet,gw):
+            return {
+            "subnets": [
+                {
+                    "name": name,
+                    "cidr": subnet,
+                    "ip_version": 4,
+                    "gateway_ip": None,
+                    "enable_dhcp": True,
+                    "dns_nameservers": ["8.8.8.8"],
+                    "host_routes": [ {"destination": "0.0.0.0/0", "nexthop": gw} ],
+                    "name" : name,
+                    "network_id" : network_id,
+                    "allocation_pools" : [ { "start": start, "end": end } ]
+                 } ]
+            }
         try:
-            net = self.net_template(name,network,vlan)
+            net = net_template(name,network,vlan)
             net_response = self.neutron.create_network(body=net)
-            pprint(net_response)
+            # pprint(net_response)
             net_dict = net_response['network']
             network_id = net_dict['id']
             # print "Network %s created" % network_id
     
-            subnet = self.subnet_template(name,network_id,start,end,subnet,gw)
+            subnet = subnet_template(name,network_id,start,end,subnet,gw)
     
             subnet_response = self.neutron.create_subnet(body=subnet)
             # print "Created subnet %s" % subnet

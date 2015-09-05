@@ -26,9 +26,10 @@ from os import environ as env
 import os
 import argparse
 from pprint import pprint
-from neutronclient.v2_0 import client
+# from neutronclient.v2_0 import client
 import novaclient.client
-from neutroncreate import net_build,net_delete,port_build
+# from neutroncreate import net_build,net_delete,port_build
+from neutron import Neutron
 
 spec_error = False
 
@@ -64,8 +65,30 @@ except:
     print "couldn't read the spec file '%s'" % specfile
     sys.exit(1)
 
-neutron = client.Client( username = os.environ['OS_USERNAME'], password = os.environ['OS_PASSWORD'], auth_url = os.environ['OS_AUTH_URL'], tenant_name = os.environ['OS_TENANT_NAME'])
-nova    = novaclient.client.Client("2", auth_url=env['OS_AUTH_URL'], username=env['OS_USERNAME'], api_key=env['OS_PASSWORD'], project_id=env['OS_TENANT_NAME'])
+if spec['credentials'] and spec['controller']:
+    print "using OpenStack auth credentials from spec file"
+    credentials = spec['credentials']
+    auth_url = "http://" + spec['controller'] + ":35357/v2.0"
+elif (os.environ['OS_USERNAME'] and os.environ['OS_PASSWORD'] and os.environ['OS_AUTH_URL'] and os.environ['OS_TENANT_NAME']):
+    print "using OpenStack auth credentials from environment"
+    credentials = { 'user' : os.environ['OS_USERNAME'],
+                    'password' : os.environ['OS_PASSWORD'],
+                    'project' : os.environ['OS_TENANT_NAME'] }
+    auth_url = os.environ['OS_AUTH_URL']
+else:
+    print "Can't find OpenStack auth credentials in environment or spec file, giving up..."
+    sys.exit(1)
+
+# neutron = client.Client( username = credentials['user'],
+#                         password = credentials['password'],
+#                         tenant_name = credentials['project'],
+#                         auth_url = auth_url)
+neutron = Neutron(auth_url, credentials)
+nova    = novaclient.client.Client("2",
+                                   username = credentials['user'],
+                                   api_key = credentials['password'],
+                                   project_id = credentials['project'],
+                                   auth_url = auth_url)
 
 servers = nova.servers.list()
 server_list = {}
@@ -96,7 +119,7 @@ def server_delete(name):
             print "delete %s" % name, response
 
 net_list = {}
-for net in neutron.list_networks()['networks']:
+for net in neutron.networks:
   net_list[net['name']] = net['id']
 
 def check_keypair(name):
@@ -111,8 +134,12 @@ def check_keypair(name):
 if (not args.delete):
     print "Checking global parameters"
 
-    print "checking keypair" , spec['keypair']
-    print check_keypair(spec['keypair'])
+    print "checking keypair" , spec['keypair'],
+    if check_keypair(spec['keypair']):
+        print "OK"
+    else:
+        print "failed"
+        sys.exit(1)
 
     try:
         print "checking default network name" , spec['default network name']
@@ -138,6 +165,8 @@ elif ( not spec['Networks']):
 else:
     print "processing networks"
     for net in spec['Networks']:
+        if 'vlan' not in net:
+            net['vlan'] = 0
         if (not args.delete):
             print "building network ", net['name'] , net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'], net['physical_network']
             if (net['name'] in net_list):
@@ -207,15 +236,16 @@ def process_networks():
     if (args.delete):
         for name in net_builder.keys():
             # neutron.delete_network(net_list[name])
-            net_delete(net_list[name])
+            neutron.net_delete(net_list[name])
     else:
         for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
             print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
-            net_id = net_build(name,phynet,vlan,start,end,subnet,gw)
+            net_id = neutron.net_build(name,phynet,vlan,start,end,subnet,gw)
             if (net_id):
                 net_list[name] = net_id
             else:
                 print "error: failed to build network %s" % name
+                sys.exit(1)
 
 
 def process_servers():
@@ -236,7 +266,7 @@ def process_servers():
             for (name,ip) in ns:
                 id=net_list[name]
                 # nics.append({'net-id': id})
-                port_id = port_build(id,ip)
+                port_id = neutron.port_build(id,ip)
                 nics.append({'port-id': port_id})
             # pprint ({ 'name':k, 'image':i, 'flavor':f, 'key_name':spec['keypair'], 'nics':nics})
             instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics, config_drive=True)
