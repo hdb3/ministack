@@ -1,7 +1,8 @@
 from neutronclient.v2_0 import client
 import os
+import sys
 import traceback
-from pprint import pprint
+# from pprint import pprint
 
 
 class Neutron:
@@ -11,38 +12,43 @@ class Neutron:
                                       tenant_name = credentials['project'],
                                       auth_url = auth_url)
         self.networks = self.neutron.list_networks()['networks']
-        # pprint(self.networks)
         self.net_by_name = {}
         for net in self.networks:
             self.net_by_name[net['name']] = net
-        # pprint(self.net_by_name)
     
     def port_build(self,network_id, ip_address):
         body_value = {
             "port": {
             "admin_state_up": True,
-            # "name": "port1",
             "network_id": network_id,
             "fixed_ips": [
                 {
-                    # "subnet_id": "a0304c3a-4f08-4c43-88af-d796509c97d2",
                     "ip_address": ip_address
                 }
             ],
             }
         }
         response = self.neutron.create_port(body=body_value)
-        # pprint(response)
         return response['port']['id']
     
     def net_delete(self,net_id):
+    # deleting a network requires removal of child objects like ports and routers
+    # removing a router may require prior removal of interfaces
+    # we search routers for 
         port_list = self.neutron.list_ports()
         for port in port_list['ports']:
-            # pprint(port)
             if port['network_id'] == net_id:
                 port_id = port['id']
                 print "deleting port " , port_id
-                self.neutron.delete_port(port_id)
+                if port['device_owner'] == "network:router_interface":
+                    # print "hmmm, %s is an awkward port, and we should probably find an associated router to bork" % port_id
+                    # print "the network ID in question is %s" % port['network_id']
+                    # print "the device ID (router) in question is %s" % port['device_id']
+                    self.neutron.remove_interface_router( port['device_id'], body={'port_id' : port_id})
+                    print "deleting router " , port['device_id']
+                    self.neutron.delete_router( port['device_id'])
+                else:
+                    self.neutron.delete_port(port_id)
         print "deleting net  " , net_id
         self.neutron.delete_network(net_id)
     
@@ -61,7 +67,6 @@ class Neutron:
                       }
                    }
                 })
-            pprint(router)
             return router['router']['id']
 
         def add_interface_router(router_id,subnet_id):
@@ -112,21 +117,17 @@ class Neutron:
         try:
             net = net_template(name,network,vlan)
             net_response = self.neutron.create_network(body=net)
-            # pprint(net_response)
             net_dict = net_response['network']
             network_id = net_dict['id']
-            # print "Network %s created" % network_id
     
             subnet = subnet_template(name,network_id,start,end,subnet,gw)
     
             subnet_response = self.neutron.create_subnet(body=subnet)
             assert (len(subnet_response['subnets']) == 1)
-            pprint(subnet_response)
             subnet_id = subnet_response['subnets'][0]['id']
             print "subnet ID is %s " % subnet_id
 
             if (network and vlan == 0): # virtual network, may want a router...
-            # print "Created subnet %s" % subnet
                 print "adding a router for network %s to external network %s" % (name,network)
                 router_id = create_router(name,network)
                 add_interface_router(router_id,subnet_id)
