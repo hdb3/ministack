@@ -118,6 +118,10 @@ def server_delete(name):
             response = nova.servers.delete(s)
             print "delete %s" % name, response
 
+# the net_list somewhat duplicates functionality in the neutron library (net_by_name)
+# and should probably be removed
+# however, the possibility of non-unique net names should be considered
+# before completly removing visibility of net IDs in this code...
 net_list = {}
 for net in neutron.networks:
   net_list[net['name']] = net['id']
