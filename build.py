@@ -21,7 +21,7 @@
 
 import time
 import sys
-import traceback
+# import traceback
 from os import environ as env
 import os
 import argparse
@@ -30,6 +30,7 @@ from pprint import pprint
 import novaclient.client
 # from neutroncreate import net_build,net_delete,port_build
 from neutron import Neutron
+# from keystoneclient.v2_0 import client
 
 spec_error = False
 
@@ -79,11 +80,8 @@ else:
     print "Can't find OpenStack auth credentials in environment or spec file, giving up..."
     sys.exit(1)
 
-# neutron = client.Client( username = credentials['user'],
-#                         password = credentials['password'],
-#                         tenant_name = credentials['project'],
-#                         auth_url = auth_url)
-neutron = Neutron(auth_url, credentials)
+external_net_name = spec['external network name']
+neutron = Neutron(auth_url, credentials, external_net_name)
 nova    = novaclient.client.Client("2",
                                    username = credentials['user'],
                                    api_key = credentials['password'],
@@ -135,6 +133,7 @@ def check_keypair(name):
         print "Unexpected error:", sys.exc_info()[0]
         raise
 
+
 if (not args.delete):
     print "Checking global parameters"
 
@@ -145,21 +144,16 @@ if (not args.delete):
         print "failed"
         sys.exit(1)
 
-    try:
-        print "checking default network name" , spec['default network name']
-        default_net = nova.networks.find(label=spec['default network name'])
-        print "checking external network name" , spec['external network name']
-        external_net = nova.networks.find(label=spec['external network name'])
-    except novaclient.exceptions.NotFound:
-        print "Not found: " , sys.exc_value
+    print "checking external network name" , external_net_name ,
+    if external_net_name in net_list:
+        print "OK"
+    else:
+        print "Not found"
         spec_error = True
-    except:
-        traceback.print_exc()
-        print "Unexpected error:", sys.exc_info()[0]
-        sys.exit(1)
 
 net_builder = {}
 host_builder = {}
+router_builder = {}
 
 if (args.resume or args.suspend):
     pass
@@ -172,7 +166,7 @@ else:
         if 'vlan' not in net:
             net['vlan'] = 0
         if (not args.delete):
-            print "building network ", net['name'] , net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'], net['physical_network']
+            print "building network ", net['name'] , net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'], net.get('physical_network')
             if (net['name'] in net_list):
                 if (args.dryrun or args.build):
                     spec_error = True
@@ -180,11 +174,11 @@ else:
                 else:
                     print "network %s exists" % net['name']
             else:
-                net_builder[net['name']] =  (net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'],net['physical_network'])
+                net_builder[net['name']] =  (net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'],net.get('physical_network'))
         elif (args.delete > 1):
             if (net['name'] in net_list):
                 print "Will delete network %s" % net['name']
-                net_builder[net['name']] =  (net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'],net['physical_network'])
+                net_builder[net['name']] =  (net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'],net.get('physical_network'))
             else:
                 print "Can't delete non-existent network %s" % net['name']
 
@@ -209,16 +203,31 @@ else:
                 flavor = nova.flavors.find(name=host['flavor'])
 
                 nets = []
-                for (name,ip) in host.get('net'):
-                    if (name not in net_builder and name not in net_list):
-                        if (args.complete):
-                            print "Build warning - host network %s not defined" % name
+                try:
+                    for (name,ip,fip) in host.get('net'):
+                        if (name not in net_builder and name not in net_list):
+                            if (args.complete):
+                                print "Build warning - host network %s not defined" % name
+                            else:
+                                spec_error = True
+                                print "Build Error - host network %s not defined" % name
                         else:
-                            spec_error = True
-                            print "Build Error - host network %s not defined" % name
-                    else:
-                        nets.append((name,ip))
-                host_builder[host['name']] = (image,flavor,nets)
+                            if fip:
+                                fip_id = neutron.get_floatingip(external_net_name,fip,args.dryrun)
+                                router_builder[name] = ()
+                            else:
+                                fip_id = None
+                            nets.append((name,ip,fip_id))
+                    host_builder[host['name']] = (image,flavor,nets)
+                except ValueError:
+                    print "Sorry, I changed the spec file format.  The host net array elemnts now have a third member which is the desired",
+                    print " floating IP, if any.  '*' means assign any one free..."
+                    sys.exit(1)
+
+                except:
+                    print "this is an unexpected exception!"
+                    print(traceback.format_exc())
+                    sys.exit(1)
         else:
             if (host['name'] in server_list):
                 print "processing host %s" % host['name']
@@ -243,8 +252,9 @@ def process_networks():
             neutron.net_delete(net_list[name])
     else:
         for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
+            router_needed = name in router_builder
             print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
-            net_id = neutron.net_build(name,phynet,vlan,start,end,subnet,gw)
+            net_id = neutron.net_build(name,phynet,vlan,start,end,subnet,gw,router_needed)
             if (net_id):
                 net_list[name] = net_id
             else:
@@ -267,11 +277,13 @@ def process_servers():
         for k,(i,f,ns) in host_builder.items():
             print "host %s : (%s,%s)" % (k,i,f)
             nics=[]
-            for (name,ip) in ns:
+            for (name,ip,fip_id) in ns:
                 id=net_list[name]
                 # nics.append({'net-id': id})
                 port_id = neutron.port_build(id,ip)
                 nics.append({'port-id': port_id})
+                if (fip_id): # floating IP requested
+                    neutron.floatingip_bind(port_id,fip_id)
             # pprint ({ 'name':k, 'image':i, 'flavor':f, 'key_name':spec['keypair'], 'nics':nics})
             instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics, config_drive=True)
 
