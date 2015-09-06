@@ -8,7 +8,7 @@ from keystoneclient.v2_0 import client as keystone_client
 
 
 class Neutron:
-    def __init__ (self, auth_url, credentials, external_network_name):
+    def __init__ (self, auth_url, credentials, config):
         self.neutron = client.Client( username = credentials['user'],
                                       password = credentials['password'],
                                       tenant_name = credentials['project'],
@@ -18,8 +18,9 @@ class Neutron:
         self.net_by_name = {}
         for net in self.networks:
             self.net_by_name[net['name']] = net
-        self.external_network_name = external_network_name
-        self.external_network_id = self.net_by_name[external_network_name]['id']
+        self.external_network_name = config['external_network_name']
+        self.dns = config['dns']
+        self.external_network_id = self.net_by_name[self.external_network_name]['id']
 
         keystone = keystone_client.Client( username = credentials['user'],
                                   password = credentials['password'],
@@ -179,7 +180,7 @@ class Neutron:
                     "ip_version": 4,
                     "gateway_ip": gw,
                     "enable_dhcp": True,
-                    "dns_nameservers": ["8.8.8.8"],
+                    "dns_nameservers": [self.dns],
                     "host_routes": [ {"destination": "0.0.0.0/0", "nexthop": gw} ],
                     "name" : name,
                     "network_id" : network_id,

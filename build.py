@@ -21,6 +21,7 @@
 
 import time
 import sys
+import traceback
 from os import environ as env
 import os
 import argparse
@@ -76,8 +77,10 @@ else:
     print "Can't find OpenStack auth credentials in environment or spec file, giving up..."
     sys.exit(1)
 
-external_net_name = spec['external network name']
-neutron = Neutron(auth_url, credentials, external_net_name)
+config = {}
+config['external_network_name'] = spec['external network name']
+config['dns'] = spec['dns']
+neutron = Neutron(auth_url, credentials, config)
 nova    = novaclient.client.Client("2",
                                    username = credentials['user'],
                                    api_key = credentials['password'],
@@ -138,13 +141,6 @@ if (not args.delete):
     else:
         print "failed"
         sys.exit(1)
-
-    print "checking external network name" , external_net_name ,
-    if external_net_name in net_list:
-        print "OK"
-    else:
-        print "Not found"
-        spec_error = True
 
 net_builder = {}
 host_builder = {}
@@ -208,7 +204,8 @@ else:
                                 print "Build Error - host network %s not defined" % name
                         else:
                             if fip:
-                                fip_id = neutron.get_floatingip(external_net_name,fip,args.dryrun)
+                                # fip_id = neutron.get_floatingip(external_net_name,fip,args.dryrun)
+                                fip_id = neutron.get_floatingip(config['external_network_name'],fip,args.dryrun)
                                 router_builder[name] = ()
                             else:
                                 fip_id = None
