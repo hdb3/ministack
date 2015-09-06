@@ -1,0 +1,3 @@
+The upgrade branch was created to support image creation for VMs with completly virtual networks which also have floating IPs
+The earlier version catered for direct connection of VMs to external networks, through the medium of VLANs on an external network interface
+This code has some dependencies on OpenStack patch levels - this is only applicable in the case that the user wants to have floating IPs created automatically.  The OpenStack bug report which describes this is here: https://review.openstack.org/#/c/70286/22/.  I created a patch file in this directory, which can be applied directly to a Juno release. (patch.floatingip)

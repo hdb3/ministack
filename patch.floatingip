@@ -1,0 +1,56 @@
+diff --git a/neutron/db/l3_db.py b/neutron/db/l3_db.py
+index bdef819..679f4c5 100644
+--- a/neutron/db/l3_db.py
++++ b/neutron/db/l3_db.py
+@@ -773,16 +773,23 @@ class L3_NAT_dbonly_mixin(l3.RouterPluginBase):
+             # This external port is never exposed to the tenant.
+             # it is used purely for internal system and admin use when
+             # managing floating IPs.
+-            external_port = self._core_plugin.create_port(context.elevated(), {
+-                'port':
+-                {'tenant_id': '',  # tenant intentionally not set
+-                 'network_id': f_net_id,
+-                 'mac_address': attributes.ATTR_NOT_SPECIFIED,
+-                 'fixed_ips': attributes.ATTR_NOT_SPECIFIED,
+-                 'admin_state_up': True,
+-                 'device_id': fip_id,
+-                 'device_owner': DEVICE_OWNER_FLOATINGIP,
+-                 'name': ''}})
++
++            port = {'tenant_id': '',  # tenant intentionally not set
++                    'network_id': f_net_id,
++                    'mac_address': attributes.ATTR_NOT_SPECIFIED,
++                    'fixed_ips': attributes.ATTR_NOT_SPECIFIED,
++                    'admin_state_up': True,
++                    'device_id': fip_id,
++                    'device_owner': DEVICE_OWNER_FLOATINGIP,
++                    'name': ''}
++
++            if fip.get('floating_ip_address'):
++                port['fixed_ips'] = [
++                    {'ip_address': fip['floating_ip_address']}]
++
++            external_port = self._core_plugin.create_port(context.elevated(),
++                                                          {'port': port})
++
+             # Ensure IP addresses are allocated on external port
+             if not external_port['fixed_ips']:
+                 raise n_exc.ExternalIpAddressExhausted(net_id=f_net_id)
+diff --git a/neutron/extensions/l3.py b/neutron/extensions/l3.py
+index 1497d9f..e1106cd 100644
+--- a/neutron/extensions/l3.py
++++ b/neutron/extensions/l3.py
+@@ -120,9 +120,10 @@ RESOURCE_ATTRIBUTE_MAP = {
+                'validate': {'type:uuid': None},
+                'is_visible': True,
+                'primary_key': True},
+-        'floating_ip_address': {'allow_post': False, 'allow_put': False,
++        'floating_ip_address': {'allow_post': True, 'allow_put': False,
+                                 'validate': {'type:ip_address_or_none': None},
+-                                'is_visible': True},
++                                'is_visible': True, 'default': None,
++                                'enforce_policy': True},
+         'floating_network_id': {'allow_post': True, 'allow_put': False,
+                                 'validate': {'type:uuid': None},
+                                 'is_visible': True},
+
