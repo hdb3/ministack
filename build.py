@@ -21,16 +21,12 @@
 
 import time
 import sys
-# import traceback
 from os import environ as env
 import os
 import argparse
 from pprint import pprint
-# from neutronclient.v2_0 import client
 import novaclient.client
-# from neutroncreate import net_build,net_delete,port_build
 from neutron import Neutron
-# from keystoneclient.v2_0 import client
 
 spec_error = False
 
@@ -92,7 +88,6 @@ servers = nova.servers.list()
 server_list = {}
 for server in servers:
     server_list[server.name] = (server.id,server.status)
-    # print "server %s %s %s" % (server.name,server.id,server.status)
 
 def server_suspend(name):
     for s in servers:
@@ -248,7 +243,6 @@ def process_networks():
     print "processing networks"
     if (args.delete):
         for name in net_builder.keys():
-            # neutron.delete_network(net_list[name])
             neutron.net_delete(net_list[name])
     else:
         for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
@@ -279,12 +273,10 @@ def process_servers():
             nics=[]
             for (name,ip,fip_id) in ns:
                 id=net_list[name]
-                # nics.append({'net-id': id})
                 port_id = neutron.port_build(id,ip)
                 nics.append({'port-id': port_id})
                 if (fip_id): # floating IP requested
                     neutron.floatingip_bind(port_id,fip_id)
-            # pprint ({ 'name':k, 'image':i, 'flavor':f, 'key_name':spec['keypair'], 'nics':nics})
             instance = nova.servers.create(name=k, image=i, flavor=f, key_name=spec['keypair'], nics=nics, config_drive=True)
 
 

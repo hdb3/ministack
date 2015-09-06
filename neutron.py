@@ -15,7 +15,6 @@ class Neutron:
                                       auth_url = auth_url)
         self.networks = self.neutron.list_networks()['networks']
         self.floating_ips = self.neutron.list_floatingips()['floatingips']
-        # pprint(self.floating_ips)
         self.net_by_name = {}
         for net in self.networks:
             self.net_by_name[net['name']] = net
@@ -119,9 +118,7 @@ class Neutron:
                 port_id = port['id']
                 print "deleting port " , port_id
                 if port['device_owner'] == "network:router_interface":
-                    # print "hmmm, %s is an awkward port, and we should probably find an associated router to bork" % port_id
-                    # print "the network ID in question is %s" % port['network_id']
-                    # print "the device ID (router) in question is %s" % port['device_id']
+                # can't delete the port directly, but removing the interface from the associated router also removes this kind of port
                     self.neutron.remove_interface_router( port['device_id'], body={'port_id' : port_id})
                     print "deleting router " , port['device_id']
                     self.neutron.delete_router( port['device_id'])
