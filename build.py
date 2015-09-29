@@ -33,6 +33,7 @@ spec_error = False
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
+group.add_argument('--auth','-a', action='store_true')
 group.add_argument('--dryrun','-n', action='store_true')
 group.add_argument('--build','-b', action='store_true')
 group.add_argument('--delete', '-d', action='count')
@@ -76,6 +77,10 @@ elif (os.environ['OS_USERNAME'] and os.environ['OS_PASSWORD'] and os.environ['OS
 else:
     print "Can't find OpenStack auth credentials in environment or spec file, giving up..."
     sys.exit(1)
+
+if args.auth:
+    print "credentials string:\nexport OS_USERNAME=%s OS_PASSWORD=%s OS_TENANT_NAME=%s OS_AUTH_URL=%s" % (credentials['user'],credentials['password'],credentials['project'],auth_url)
+    sys.exit(0)
 
 config = {}
 config['external_network_name'] = spec['external network name']
