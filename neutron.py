@@ -4,7 +4,7 @@ import os
 import sys
 import traceback
 from keystoneclient.v2_0 import client as keystone_client
-# from pprint import pprint
+from pprint import pprint
 
 
 class Neutron:
@@ -70,7 +70,7 @@ class Neutron:
                 return None
             else:
                 response = self.neutron.create_floatingip({ 'floating_network_id' : net_id })
-                pprint(reponse)
+                pprint(response)
                 return response['id']
 
         # we were asked for a specific floating IP address.....
