@@ -200,7 +200,9 @@ else:
 
                 nets = []
                 try:
-                    for (name,ip,fip) in host.get('net'):
+                    for tuple in host.get('net'):
+                        name = tuple[0]
+                        ip   = tuple[1]
                         if (name not in net_builder and name not in net_list):
                             if (args.complete):
                                 print "Build warning - host network %s not defined" % name
@@ -208,18 +210,17 @@ else:
                                 spec_error = True
                                 print "Build Error - host network %s not defined" % name
                         else:
-                            if fip:
-                                # fip_id = neutron.get_floatingip(external_net_name,fip,args.dryrun)
+                            if len(tuple) == 2:
+                                fip_id = None
+                            elif len(tuple) == 3:
+                                fip = tuple[2]
                                 fip_id = neutron.get_floatingip(config['external_network_name'],fip,args.dryrun)
                                 router_builder[name] = ()
                             else:
-                                fip_id = None
+                                print "Hmm, your host network descriptor should have 2 or 3 elements only"
+                                sys.exit(1)
                             nets.append((name,ip,fip_id))
                     host_builder[host['name']] = (image,flavor,nets)
-                except ValueError:
-                    print "Sorry, I changed the spec file format.  The host net array elemnts now have a third member which is the desired",
-                    print " floating IP, if any.  '*' means assign any one free..."
-                    sys.exit(1)
 
                 except:
                     print "this is an unexpected exception!"

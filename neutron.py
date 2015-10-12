@@ -2,6 +2,7 @@
 from neutronclient.v2_0 import client
 import os
 import sys
+import ipaddress # note - this requires the py2-ipaddress module!
 import traceback
 from keystoneclient.v2_0 import client as keystone_client
 from pprint import pprint
@@ -96,17 +97,25 @@ class Neutron:
             return response['id']
 
     def port_build(self,network_id, ip_address):
+        # print "building port for net ID %s ( IP %s )" % (network_id, ip_address) ,
         body_value = {
             "port": {
             "admin_state_up": True,
             "network_id": network_id,
-            "fixed_ips": [
-                {
-                    "ip_address": ip_address
-                }
-            ],
             }
         }
+        if "*" == ip_address:
+            # only need the network ID to enable an IP address to be assigned...
+            # print "wildcard build"
+            pass
+        else:
+            try:
+                tmp = ipaddress.IPv4Address(ip_address) # just using this to validate the IP address.....
+                # print "explicit build"
+                body_value['port']['fixed_ips'] = [ { "ip_address": ip_address } ]
+            except ipaddress.AddressValueError:
+                print "Warning - invalid IP address specified: %s " % ip_address
+                return null
         response = self.neutron.create_port(body=body_value)
         return response['port']['id']
     
