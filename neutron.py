@@ -148,7 +148,7 @@ class Neutron:
                         {
                         "name": name,
                         "admin_state_up": True,
-                        "shared": True,
+                        "shared": False,
                         "router:external": False,
                         }
                 }
@@ -158,7 +158,7 @@ class Neutron:
                         {
                         "name": name,
                         "admin_state_up": True,
-                        "shared": True,
+                        "shared": False,
                         "router:external": False,
                         "provider:network_type": "vlan",
                         "provider:segmentation_id": vlan,
