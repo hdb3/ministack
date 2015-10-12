@@ -65,7 +65,7 @@ except:
     sys.exit(1)
 
 if spec['credentials'] and spec['controller']:
-    print "using OpenStack auth credentials from spec file"
+    # print "using OpenStack auth credentials from spec file"
     credentials = spec['credentials']
     auth_url = "http://" + spec['controller'] + ":35357/v2.0"
 elif (os.environ['OS_USERNAME'] and os.environ['OS_PASSWORD'] and os.environ['OS_AUTH_URL'] and os.environ['OS_TENANT_NAME']):
@@ -138,13 +138,15 @@ def check_keypair(name):
 
 
 if (not args.delete):
-    print "Checking global parameters"
+    # print "Checking global parameters"
 
-    print "checking keypair" , spec['keypair'],
+    # print "checking keypair" , spec['keypair'],
     if check_keypair(spec['keypair']):
-        print "OK"
+        # print "OK"
+        pass
     else:
-        print "failed"
+        # print "failed"
+        print "checking keypair failed"
         sys.exit(1)
 
 net_builder = {}
@@ -250,7 +252,7 @@ def process_networks():
     else:
         for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
             router_needed = name in router_builder
-            print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
+            # print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
             net_id = neutron.net_build(name,phynet,vlan,start,end,subnet,gw,router_needed)
             if (net_id):
                 net_list[name] = net_id

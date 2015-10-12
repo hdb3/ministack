@@ -32,23 +32,9 @@ class Neutron:
         # for tenant in tenants:
         for tenant in keystone.tenants.list():
           if tenant.name == credentials['project']:
-              # print "found my project! %s, ID=%s" % (credentials['project'], tenant.id)
               self.tenant_id = tenant.id
               break
 
-#   users = keystone.users.list()
-
-#   for user in users:
-#     if user.name == credentials['user']:
-#         print "found my user! %s, ID=%s" % (credentials['user'], user.id)
-#         # pprint(user)
-#         if user.tenantId == my_tenant_id:
-#             print "and my tenant ID agrees with the one given to me in the environment or spec file..."
-#         else:
-#             print "but my tenant ID does not agree with the one given to me in the environment or spec file...",
-#             print " from user record: %s" % user.tenantId,
-#             print " from tenant record: %s" % my_tenant_id
-    
     def floatingip_bind(self, port_id, floatingip_id):
         try:
             self.neutron.update_floatingip(floatingip_id, {'floatingip' : { 'port_id' : port_id }})
@@ -93,11 +79,9 @@ class Neutron:
             return None
         else:
             response = self.neutron.create_floatingip({ 'floatingip' : { 'floating_network_id' : net_id, 'floating_ip_address' : floatingip }})
-            pprint(reponse)
             return response['id']
 
     def port_build(self,network_id, ip_address):
-        # print "building port for net ID %s ( IP %s )" % (network_id, ip_address) ,
         body_value = {
             "port": {
             "admin_state_up": True,
@@ -106,12 +90,10 @@ class Neutron:
         }
         if "*" == ip_address:
             # only need the network ID to enable an IP address to be assigned...
-            # print "wildcard build"
             pass
         else:
             try:
                 tmp = ipaddress.IPv4Address(ip_address) # just using this to validate the IP address.....
-                # print "explicit build"
                 body_value['port']['fixed_ips'] = [ { "ip_address": ip_address } ]
             except ipaddress.AddressValueError:
                 print "Warning - invalid IP address specified: %s " % ip_address
@@ -197,28 +179,24 @@ class Neutron:
                     "allocation_pools" : [ { "start": start, "end": end } ]
                  } ]
             }
-        try:
-            net = net_template(name,network,vlan)
-            net_response = self.neutron.create_network(body=net)
-            net_dict = net_response['network']
-            network_id = net_dict['id']
-    
-            subnet = subnet_template(name,network_id,start,end,subnet,gw)
-    
-            subnet_response = self.neutron.create_subnet(body=subnet)
-            assert (len(subnet_response['subnets']) == 1)
-            subnet_id = subnet_response['subnets'][0]['id']
-            print "subnet ID is %s " % subnet_id
 
-            if router_needed:
-                if not vlan == 0:
-                    print "*** Warning: adding router for VLAN network - is this really wanted!!!!?"
-                print "adding a router for network %s to external network" % name
-                router_id = create_router(name,self.external_network_id)
-                add_interface_router(router_id,subnet_id)
-        except: # DANGEROUS! what exception am I actually trying to catch here?  not language errors!
-            print(traceback.format_exc())
-            return None
+        net = net_template(name,network,vlan)
+        net_response = self.neutron.create_network(body=net)
+        net_dict = net_response['network']
+        network_id = net_dict['id']
+    
+        subnet = subnet_template(name,network_id,start,end,subnet,gw)
+    
+        subnet_response = self.neutron.create_subnet(body=subnet)
+        assert (len(subnet_response['subnets']) == 1)
+        subnet_id = subnet_response['subnets'][0]['id']
+
+        if router_needed:
+            if not vlan == 0:
+                print "*** Warning: adding router for VLAN network - is this really wanted!!!!?"
+            print "adding a router for network %s to external network" % name
+            router_id = create_router(name,self.external_network_id)
+            add_interface_router(router_id,subnet_id)
     
         print "Build completed"
     
