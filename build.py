@@ -22,6 +22,7 @@
 import time
 import sys
 import traceback
+from socket import gethostbyname 
 from os import environ as env
 import os
 import argparse
@@ -215,7 +216,10 @@ else:
                             if len(tuple) == 2:
                                 fip_id = None
                             elif len(tuple) == 3:
-                                fip = tuple[2]
+                                if "*" == tuple[2]:
+                                    fip = "*"
+                                else:
+                                    fip = gethostbyname(tuple[2])
                                 fip_id = neutron.get_floatingip(config['external_network_name'],fip,args.dryrun)
                                 router_builder[name] = ()
                             else:

@@ -1,5 +1,6 @@
 #refer to http://developer.openstack.org/api-ref-networking-v2-ext.html for details of the API...
 from neutronclient.v2_0 import client
+from neutronclient.common.exceptions import PortNotFoundClient
 import os
 import sys
 import ipaddress # note - this requires the py2-ipaddress module!
@@ -28,8 +29,6 @@ class Neutron:
                                   tenant_name = credentials['project'],
                                   auth_url = auth_url)
 
-        # tenants = keystone.tenants.list()
-        # for tenant in tenants:
         for tenant in keystone.tenants.list():
           if tenant.name == credentials['project']:
               self.tenant_id = tenant.id
@@ -105,21 +104,33 @@ class Neutron:
     # deleting a network requires removal of child objects like ports and routers
     # removing a router may require prior removal of interfaces
     # we search routers for 
-        port_list = self.neutron.list_ports()
-        for port in port_list['ports']:
-            if port['network_id'] == net_id:
-                port_id = port['id']
-                print "deleting port " , port_id
-                if port['device_owner'] == "network:router_interface":
-                # can't delete the port directly, but removing the interface from the associated router also removes this kind of port
-                    self.neutron.remove_interface_router( port['device_id'], body={'port_id' : port_id})
-                    print "deleting router " , port['device_id']
-                    self.neutron.delete_router( port['device_id'])
-                else:
-                    try:
+        port_list = self.neutron.list_ports(network_id=net_id)['ports']
+        repeat_flag = False
+        # this is an endless loop if the ports can't be deleted!
+        # hopefully however the loop never actually happens
+        # most of the problems are probably due
+        while len(port_list) > 0 :
+            for port in port_list:
+                if port['device_owner'] != "network:router_interface":
+                    port_id = port['id']
+                    if repeat_flag:
+                        print "port delete retry: %s" % port_id
+                    try: 
                         self.neutron.delete_port(port_id)
-                    except neutronclient.common.exceptions.PortNotFoundClient:
-                        print "Warning: failed to delete port %s (Port Not Found)" % port_id
+                    except PortNotFoundClient:
+                        pass # we don't really care if the port has gone away already!
+            port_list = self.neutron.list_ports(network_id=net_id)['ports']
+            for port in port_list:
+                if port['device_owner'] == "network:router_interface":
+                    port_id = port['id']
+                    if repeat_flag:
+                        print "router port delete retry: %s" % port_id
+                    self.neutron.remove_interface_router( port['device_id'], body={'port_id' : port_id})
+                    self.neutron.delete_router( port['device_id'])
+            port_list = self.neutron.list_ports(network_id=net_id)['ports']
+            if len(port_list) > 0 :
+                print "retrying some port delete operations!"
+                repeat_flag = True
         print "deleting net  " , net_id
         self.neutron.delete_network(net_id)
     
