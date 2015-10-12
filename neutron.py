@@ -14,7 +14,7 @@ class Neutron:
                                       tenant_name = credentials['project'],
                                       auth_url = auth_url)
         self.networks = self.neutron.list_networks()['networks']
-        self.floating_ips = self.neutron.list_floatingips()['floatingips']
+        self.floating_ips = self.neutron.list_floatingips()['floatingips'] # a list of 'floatingip' dictionary objects is returned...
         self.net_by_name = {}
         for net in self.networks:
             self.net_by_name[net['name']] = net
@@ -63,6 +63,7 @@ class Neutron:
             for f in self.floating_ips:
                if net_id == f["floating_network_id"] and not f['port_id'] and f['tenant_id'] == self.tenant_id:
                    print "assigning existing floating IP address %s, ID:%s" % (floatingip,f['floating_ip_address'])
+                   self.floating_ips.remove(f)
                    return f['id']
             # no existing float matches - need to assign a new floating IP
             if dryrun:
