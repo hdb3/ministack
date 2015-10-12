@@ -116,7 +116,10 @@ class Neutron:
                     print "deleting router " , port['device_id']
                     self.neutron.delete_router( port['device_id'])
                 else:
-                    self.neutron.delete_port(port_id)
+                    try:
+                        self.neutron.delete_port(port_id)
+                    except neutronclient.common.exceptions.PortNotFoundClient:
+                        print "Warning: failed to delete port %s (Port Not Found)" % port_id
         print "deleting net  " , net_id
         self.neutron.delete_network(net_id)
     
