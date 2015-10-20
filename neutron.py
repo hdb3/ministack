@@ -96,7 +96,8 @@ class Neutron:
                 body_value['port']['fixed_ips'] = [ { "ip_address": ip_address } ]
             except ipaddress.AddressValueError:
                 print "Warning - invalid IP address specified: %s " % ip_address
-                return null
+                # return None
+                pass
         response = self.neutron.create_port(body=body_value)
         return response['port']['id']
     
