@@ -170,6 +170,10 @@ class Neutron:
                     "enable_dhcp": True,
                     "name" : name,
                     "network_id" : network_id,
+                    # "dns_nameservers" : [], # unfortunately, even if a given interface has no gateway or DNS servers, dhclient will still wipeout a previous DNS name server
+                                              # so it is important to always send the one you want to use
+                                              # there is a different question, which is why dnsmasq does not correctly server DNS when contaced directly on these virtual interfaces...
+                    "dns_nameservers" : [self.dns],
             }
 
         # unpack the mandatory network fields....
@@ -190,7 +194,7 @@ class Neutron:
             subnet_request['enable_dhcp'] = False
         if 'gateway' in net:
             subnet_request['gateway_ip'] = net['gateway']
-            subnet_request['dns_nameservers'] = [self.dns]
+            # subnet_request['dns_nameservers'] = [self.dns] # see abovce comment - always need this so don't bother doing it here too
             subnet_request['host_routes'] = [ {'destination': "0.0.0.0/0", 'nexthop': net['gateway']} ]
         if 'start' in net and 'end' in net:
             subnet_request['allocation_pools'] = [ { 'start': net['start'], 'end': net['end'] } ]
