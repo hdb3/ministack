@@ -57,7 +57,7 @@ class Neutron:
                 return None
             else:
                 response = self.neutron.create_floatingip({ 'floating_network_id' : net_id })
-                pprint(response)
+                # pprint(response)
                 return response['id']
 
         # we were asked for a specific floating IP address.....
@@ -135,7 +135,7 @@ class Neutron:
         print "deleting net  " , net_id
         self.neutron.delete_network(net_id)
     
-    def net_build(self,name,network,vlan,start,end,subnet,gw,router_needed):
+    def net_build(self,net):
 
         def create_router(name,external_network_id):
             router = self.neutron.create_router(
@@ -153,66 +153,59 @@ class Neutron:
             return self.neutron.add_interface_router( router_id,
                 { "subnet_id" : subnet_id } )
 
-        def net_template(name,network,vlan):
-            if vlan == 0: # this is a pure virtual network, possibly with a NATed external network
+        def net_template(name):
                 return  {
-                    "network":
-                        {
                         "name": name,
                         "admin_state_up": True,
                         "shared": False,
                         "router:external": False,
-                        }
-                }
-            else:
-                return  {
-                    "network":
-                        {
-                        "name": name,
-                        "admin_state_up": True,
-                        "shared": False,
-                        "router:external": False,
-                        "provider:network_type": "vlan",
-                        "provider:segmentation_id": vlan,
-                        "provider:physical_network": network
-                        }
                 }
         
-        def subnet_template(name,network_id,start,end,subnet,gw):
+        def subnet_template(name,network_id,subnet):
             return {
-            "subnets": [
-                {
                     "name": name,
                     "cidr": subnet,
                     "ip_version": 4,
-                    "gateway_ip": gw,
+                    "gateway_ip": None,
                     "enable_dhcp": True,
-                    "dns_nameservers": [self.dns],
-                    "host_routes": [ {"destination": "0.0.0.0/0", "nexthop": gw} ],
                     "name" : name,
                     "network_id" : network_id,
-                    "allocation_pools" : [ { "start": start, "end": end } ]
-                 } ]
             }
 
-        net = net_template(name,network,vlan)
-        net_response = self.neutron.create_network(body=net)
-        net_dict = net_response['network']
-        network_id = net_dict['id']
+        # unpack the mandatory network fields....
+        name = net['name']
+        subnet = net['subnet']
+
+        net_request = net_template(name)
+        if 'vlan' in net:
+            net_request['provider:network_type'] = "vlan"
+            net_request['provider:segmentation_id'] = net['vlan']
+        if 'network' in net:
+            net_request['provider:physical_network'] = net['network']
+        net_response = self.neutron.create_network(body={ "network" : net_request })['network']
+        network_id = net_response['id']
     
-        subnet = subnet_template(name,network_id,start,end,subnet,gw)
+        subnet_request = subnet_template(name,network_id,subnet)
+        if 'vlan' in net:
+            subnet_request['enable_dhcp'] = False
+        if 'gateway' in net:
+            subnet_request['gateway_ip'] = net['gateway']
+            subnet_request['dns_nameservers'] = [self.dns]
+            subnet_request['host_routes'] = [ {'destination': "0.0.0.0/0", 'nexthop': net['gateway']} ]
+        if 'start' in net and 'end' in net:
+            subnet_request['allocation_pools'] = [ { 'start': net['start'], 'end': net['end'] } ]
     
-        subnet_response = self.neutron.create_subnet(body=subnet)
+        subnet_response = self.neutron.create_subnet(body={"subnets": [subnet_request]})
         assert (len(subnet_response['subnets']) == 1)
         subnet_id = subnet_response['subnets'][0]['id']
 
-        if router_needed:
-            if not vlan == 0:
+        if 'gateway' in net:
+            if 'vlan' in net:
                 print "*** Warning: adding router for VLAN network - is this really wanted!!!!?"
             print "adding a router for network %s to external network" % name
             router_id = create_router(name,self.external_network_id)
             add_interface_router(router_id,subnet_id)
     
-        print "Build completed"
+        print "Network build completed"
     
         return network_id

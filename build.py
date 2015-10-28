@@ -139,20 +139,15 @@ def check_keypair(name):
 
 
 if (not args.delete):
-    # print "Checking global parameters"
-
-    # print "checking keypair" , spec['keypair'],
     if check_keypair(spec['keypair']):
-        # print "OK"
         pass
     else:
-        # print "failed"
         print "checking keypair failed"
         sys.exit(1)
 
 net_builder = {}
 host_builder = {}
-router_builder = {}
+router_needed = {}
 
 if (args.resume or args.suspend):
     pass
@@ -160,35 +155,30 @@ elif ( not spec['Networks']):
     print "Error: no Networks in spec file"
     sys.exit(1)
 else:
-    print "processing networks"
     for net in spec['Networks']:
-        if 'vlan' not in net:
-            net['vlan'] = 0
+        net_name = net['name']
         if (not args.delete):
-            print "building network ", net['name'] , net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'], net.get('physical_network')
-            if (net['name'] in net_list):
-                if (args.dryrun or args.build):
+            if (net_name in net_list):
+                if (args.dryrun or build):
                     spec_error = True
-                    print "Build Error - network %s is already defined" % net['name']
+                    print "Build warning - network %s is already defined" % net_name
                 else:
-                    print "network %s exists" % net['name']
+                    print "network %s exists" % net_name
             else:
-                net_builder[net['name']] =  (net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'],net.get('physical_network'))
+                net_builder[net_name] =  net
         elif (args.delete > 1):
-            if (net['name'] in net_list):
-                print "Will delete network %s" % net['name']
-                net_builder[net['name']] =  (net['start'], net['end'], net['subnet'], net['gateway'], net['vlan'],net.get('physical_network'))
+            if (net_name in net_list):
+                net_builder[net_name] =  net
             else:
-                print "Can't delete non-existent network %s" % net['name']
+                print "Can't delete non-existent network %s" % net_name
 
 if ( not spec['Hosts']):
     print "Warning - no hosts section in spec file"
 else:
     print "processing servers"
     for host in spec['Hosts']:
-        if (args.build or args.dryrun or args.complete):
+        if (build or args.dryrun or args.complete):
             print "building host ", host['name'] , host['image'], host['flavor'], host.get('net'), host.get('env')
-            # print "checking host name ", host['name']
             if (host['name'] in server_list):
                 if (args.complete):
                     print "host %s exists" % host['name']
@@ -204,6 +194,11 @@ else:
                 nets = []
                 try:
                     for tuple in host.get('net'):
+                    # a host network entry defines the network to be used, the assigned IP, and an optional floating IP
+                    # the network name is the actual name used in openstack, and must either be defined in the spec file or already exist
+                    # there must be a (local) IP (OpenStack insists...) but it can be wildcarded, in which case one will be selected from the pool
+                    # the optional third field is for a floating IP - this can be either a domain name or an IP
+                    # in either case it will be assigned from the external network range which is defined in the spec file
                         name = tuple[0]
                         ip   = tuple[1]
                         if (name not in net_builder and name not in net_list):
@@ -221,7 +216,7 @@ else:
                                 else:
                                     fip = gethostbyname(tuple[2])
                                 fip_id = neutron.get_floatingip(config['external_network_name'],fip,args.dryrun)
-                                router_builder[name] = ()
+                                router_needed[name] = ()
                             else:
                                 print "Hmm, your host network descriptor should have 2 or 3 elements only"
                                 sys.exit(1)
@@ -249,19 +244,16 @@ if (args.dryrun):
 
 
 def process_networks():
-    print "processing networks"
-    if (args.delete):
-        for name in net_builder.keys():
-            neutron.net_delete(net_list[name])
-    else:
-        for name,(start,end,subnet,gw,vlan,phynet) in net_builder.items():
-            router_needed = name in router_builder
-            # print "net %s : (%s,%s,%s,%s,%d,%s)" % (name,start,end,subnet,gw,vlan,phynet)
-            net_id = neutron.net_build(name,phynet,vlan,start,end,subnet,gw,router_needed)
+    for net in net_builder.values():
+        net_name = net['name']
+        if (args.delete):
+            neutron.net_delete(net_list[net_name])
+        else:
+            net_id = neutron.net_build(net)
             if (net_id):
-                net_list[name] = net_id
+                net_list[net_name] = net_id
             else:
-                print "error: failed to build network %s" % name
+                print "error: failed to build network %s" % net_name
                 sys.exit(1)
 
 
@@ -292,7 +284,7 @@ def process_servers():
 if (args.delete > 1):
     process_servers()
     process_networks()
-elif (args.build or args.complete):
+elif (build or args.complete):
     process_networks()
     process_servers()
 else:
