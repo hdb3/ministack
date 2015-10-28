@@ -193,34 +193,35 @@ else:
 
                 nets = []
                 try:
-                    for tuple in host.get('net'):
+                    for net_entry in host.get('net'):
                     # a host network entry defines the network to be used, the assigned IP, and an optional floating IP
                     # the network name is the actual name used in openstack, and must either be defined in the spec file or already exist
                     # there must be a (local) IP (OpenStack insists...) but it can be wildcarded, in which case one will be selected from the pool
                     # the optional third field is for a floating IP - this can be either a domain name or an IP
                     # in either case it will be assigned from the external network range which is defined in the spec file
-                        name = tuple[0]
-                        ip   = tuple[1]
-                        if (name not in net_builder and name not in net_list):
-                            if (args.complete):
-                                print "Build warning - host network %s not defined" % name
-                            else:
-                                spec_error = True
-                                print "Build Error - host network %s not defined" % name
-                        else:
-                            if len(tuple) == 2:
-                                fip_id = None
-                            elif len(tuple) == 3:
-                                if "*" == tuple[2]:
+                        ip = None
+                        fip_id = None
+                        if isinstance(net_entry,tuple):
+                            name = net_entry[0]
+                            if len(net_entry) > 1:
+                                ip = net_entry[1]
+                            if len(net_entry) > 2:
+                                if "*" == net_entry[2]:
                                     fip = "*"
                                 else:
-                                    fip = gethostbyname(tuple[2])
+                                    fip = gethostbyname(net_entry[2])
                                 fip_id = neutron.get_floatingip(config['external_network_name'],fip,args.dryrun)
-                                router_needed[name] = ()
-                            else:
-                                print "Hmm, your host network descriptor should have 2 or 3 elements only"
-                                sys.exit(1)
+                        elif isinstance(net_entry,basestring):
+                            name = net_entry
+                        else:
+                            print "Why me....?"
+                            sys.exit(1)
+                        if (name in net_builder or name in net_list):
                             nets.append((name,ip,fip_id))
+                        else:
+                            print "Build warning - host network %s not defined" % name
+                            spec_error = not (args.complete)
+
                     host_builder[host['name']] = (image,flavor,nets)
 
                 except:
