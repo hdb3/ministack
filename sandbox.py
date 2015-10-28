@@ -1,6 +1,6 @@
 
 spec = {
-    'name' : "snadbox VM",
+    'name' : "sandbox VM",
     'external network name' : "exnet3",
     'keypair' : "X220",
     'controller' : "r720",
