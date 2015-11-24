@@ -18,13 +18,12 @@ spec = {
     ],
     # Hint: list explicity required external IPs first to avoid them being claimed by hosts that don't care...
     'Hosts' : [
-        { 'name' : "devstack-control" , 'image' : "trusty64" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.20", "10.30.65.80"),
-                                                                                                ("odldemo2" , "192.168.111.10"),
-                                                                                                ("odldemo3" , "172.16.0.10") ] },
-        { 'name' : "devstack-compute-1" , 'image' : "trusty64" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.21","10.30.65.81"),
-                                                                                                  ("odldemo2" , "192.168.111.11"),
-                                                                                                  ("odldemo3" , "172.16.0.11") ] },
+        { 'name' : "devstack-control" , 'image' : "trusty64" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.20", "devstack-control"), ("odldemo2" , "192.168.111.10"), ("odldemo3" , "172.16.0.10") ] },
+        { 'name' : "devstack-compute-1" , 'image' : "trusty64" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.21","devstack-compute-1"), ("odldemo2" , "192.168.111.11"), ("odldemo3" , "172.16.0.11") ] },
         # { 'name' : "devstack-compute-2" , 'image' : "trusty64" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.22") ] },
         # { 'name' : "devstack-compute-3" , 'image' : "trusty64" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.23") ] },
+        { 'name' : "kilo-controller" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.60", "kilo-controller"), ("odldemo2" , "192.168.111.50"), ("odldemo3" , "172.16.0.50") ] }, 
+        { 'name' : "kilo-compute-1" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.61", "kilo-compute-1"), ("odldemo2" , "192.168.111.51"), ("odldemo3" , "172.16.0.51") ] },
+        { 'name' : "kilo-compute-2" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("odldemo" , "192.168.50.62", "kilo-compute-2"), ("odldemo2" , "192.168.111.52"), ("odldemo3" , "172.16.0.52") ] },
     ]
 }

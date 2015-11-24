@@ -210,6 +210,9 @@ else:
                                     fip = "*"
                                 else:
                                     fip = gethostbyname(net_entry[2])
+                                    if not fip:
+                                        print stderr,"host lookup failed for '%s'" % net_entry[2]
+                                        sys.exit(1)
                                 fip_id = neutron.get_floatingip(config['external_network_name'],fip,args.dryrun)
                         elif isinstance(net_entry,basestring):
                             name = net_entry
