@@ -59,9 +59,9 @@ class Neutron:
                 print "no existing floating IP available - not creating one because this is a dryrun"
                 return None
             else:
-                response = self.neutron.create_floatingip({ 'floating_network_id' : net_id })
+                response = self.neutron.create_floatingip({'floatingip': { 'floating_network_id' : net_id } })
                 # pprint(response)
-                return response['id']
+                return response['floatingip']['id']
 
         # we were asked for a specific floating IP address.....
         for f in self.floating_ips:
