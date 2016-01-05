@@ -33,6 +33,9 @@ class Neutron:
           if tenant.name == credentials['project']:
               self.tenant_id = tenant.id
               break
+        if not hasattr(self,'tenant_id'):
+            print "Could not find tenant  (_project_!) '%s' in Keystone directory\n" % credentials['project']
+            sys.exit(1)
 
     def floatingip_bind(self, port_id, floatingip_id):
         try:
