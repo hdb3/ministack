@@ -186,6 +186,8 @@ class Neutron:
             net_request['provider:segmentation_id'] = net['vlan']
         if 'network' in net:
             net_request['provider:physical_network'] = net['network']
+        elif 'physical_network' in net:
+            net_request['provider:physical_network'] = net['physical_network']
         net_response = self.neutron.create_network(body={ "network" : net_request })['network']
         network_id = net_response['id']
     
