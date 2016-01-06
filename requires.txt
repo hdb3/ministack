@@ -1,0 +1,6 @@
+python-novaclient>=3.1.0
+debtcollector>=1.1.0
+netifaces>=0.10.4
+python-neutronclient>=3.1.0
+py2-ipaddress>=3.4.1
+wrapt>=1.10.6
