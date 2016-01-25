@@ -81,7 +81,7 @@ class Neutron:
             return None
         else:
             response = self.neutron.create_floatingip({ 'floatingip' : { 'floating_network_id' : net_id, 'floating_ip_address' : floatingip }})
-            return response['id']
+            return response['floatingip']['id']
 
     def port_build(self,network_id, ip_address):
         body_value = {
