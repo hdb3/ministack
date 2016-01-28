@@ -13,10 +13,8 @@ spec = {
     ],
     # Hint: list explicity required external IPs first to avoid them being claimed by hosts that don't care...
     'Hosts' : [
-        { 'name' : "kilo-controller" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("kilo" , "192.168.0.20", "kilo-controller"), ], 'script' : "test.sh" },
-        { 'name' : "kilo-network" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("kilo" , "192.168.0.22","kilo-network"), ("kilo-dataplane"), ("kilo-provider","*") ] },
+        { 'name' : "kilo-controller" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("kilo" , "192.168.0.20", "kilo-controller"),("kilo-dataplane"), ("kilo-provider","*") ], 'script' : "test.sh" },
         { 'name' : "kilo-compute-1" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("kilo" , "192.168.0.101","kilo-compute-1"), ("kilo-dataplane"), ("kilo-provider","*") ] },
         { 'name' : "kilo-compute-2" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("kilo" , "192.168.0.102","kilo-compute-2"), ("kilo-dataplane"), ("kilo-provider","*") ] },
-        { 'name' : "kilo-host" , 'image' : "Centos7" , 'flavor':"m1.medium" , 'net' : [ ("kilo" , "192.168.0.103","kilo-host"), ("kilo-provider","*") ] },
     ]
 }
