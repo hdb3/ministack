@@ -2,7 +2,7 @@
 spec = {
     'name' : "a stand alone kilo instance",
     'external network name' : "exnet3",
-    'keypair' : "X61",
+    'keypair' : "openstack_rsa",
     'controller' : "r720",
     'dns' : "10.30.65.200",
     'credentials' : { 'user' : "nic", 'password' : "nic", 'project' : "nic" },
