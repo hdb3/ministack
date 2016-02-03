@@ -3,7 +3,7 @@ spec = {
     'name' : "ODL demo",
     'external network name' : "exnet3",
     'keypair' : "X220",
-    'controller' : "r720",
+    'controller' : "openstack_rsa",
     'dns' : "10.30.65.200",
     'credentials' : { 'user' : "nic", 'password' : "nic", 'project' : "nic" },
     # 'credentials' : { 'user' : "admin", 'password' : "admin", 'project' : "admin" },
