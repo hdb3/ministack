@@ -90,16 +90,12 @@ class Neutron:
             "network_id": network_id,
             }
         }
-        if "*" == ip_address:
-            # only need the network ID to enable an IP address to be assigned...
-            pass
-        else:
+        if ip_address and not ("*" == ip_address):
             try:
-                tmp = ipaddress.IPv4Address(ip_address) # just using this to validate the IP address.....
+                tmp = ipaddress.IPv4Address(unicode(ip_address)) # just using this to validate the IP address.....
                 body_value['port']['fixed_ips'] = [ { "ip_address": ip_address } ]
             except ipaddress.AddressValueError:
                 print "Warning - invalid IP address specified: %s " % ip_address
-                # return None
                 pass
         response = self.neutron.create_port(body=body_value)
         return response['port']['id']
