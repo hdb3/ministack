@@ -1,8 +1,10 @@
 
 spec = {
     'name' : "Mu's template #2",
-    'default network name' : "demo-net3",
-    'external network name' : "ext-net3",
+    'external network name' : "exnet3",
+    'controller' : "r720",
+    'dns' : "10.30.65.200",
+    'credentials' : { 'user' : "admin", 'password' : "admin", 'project' : "admin" },
     'keypair' : "dell4",
     'Networks' : [
         { 'name' : "lan201" , "start": "192.168.1.201", "end": "192.168.1.202", "subnet" :" 192.168.1.0/24", "gateway": "192.168.1.1", "vlan": 201, "physical_network": "vlannet" },
