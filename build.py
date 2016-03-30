@@ -84,7 +84,8 @@ if args.auth:
     sys.exit(0)
 
 config = {}
-config['external_network_name'] = spec['external network name']
+config['external_network_name'] = spec.get('external network name')
+#config['external_network_name'] = get(spec['external network name']
 config['dns'] = spec['dns']
 neutron = Neutron(auth_url, credentials, config)
 nova    = novaclient.client.Client("2",
@@ -127,6 +128,26 @@ def server_delete(name):
 net_list = {}
 for net in neutron.networks:
   net_list[net['name']] = net['id']
+
+def name_to_address(name):
+    global spec_error
+
+    if "*" == name:
+        return "*"
+
+    try:
+        address = gethostbyname(name)
+    except:
+        print "Unexpected error looking up hostname '%s':" % name, sys.exc_info()[0]
+        spec_error = True
+        return name
+
+    if address:
+        return address
+
+    print stderr,"host lookup failed for '%s'" % name
+    spec_error = True
+    return name
 
 def check_keypair(name):
     try:
@@ -199,24 +220,20 @@ else:
                     # there must be a (local) IP (OpenStack insists...) but it can be wildcarded, in which case one will be selected from the pool
                     # the optional third field is for a floating IP - this can be either a domain name or an IP
                     # in either case it will be assigned from the external network range which is defined in the spec file
+                    # the first (local) IP may also be a hostname, which is most useful for cases where the attached network is directly routable
                         ip = None
                         fip_id = None
                         if isinstance(net_entry,tuple):
                             name = net_entry[0]
                             if len(net_entry) > 1:
-                                ip = net_entry[1]
+                                ip = name_to_address(net_entry[1])
                             if len(net_entry) > 2:
-                                if "*" == net_entry[2]:
-                                    fip = "*"
-                                else:
-                                    fip = gethostbyname(net_entry[2])
-                                    if not fip:
-                                        print stderr,"host lookup failed for '%s'" % net_entry[2]
-                                        sys.exit(1)
+                                fip = name_to_address(net_entry[2])
                                 fip_id = neutron.get_floatingip(config['external_network_name'],fip,args.dryrun)
                         elif isinstance(net_entry,basestring):
                             name = net_entry
                         else:
+                            # if net_entry is neither a string or a tuple then I am confused....
                             print "Why me....?"
                             sys.exit(1)
                         if (name in net_builder or name in net_list):

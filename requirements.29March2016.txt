@@ -1,0 +1,2 @@
+1) add support for direct connection to the external routed type networks
+2) add support for adding additional block devices (for ceph testing)
