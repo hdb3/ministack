@@ -11,10 +11,10 @@ spec = {
     ],
     # Hint: list explicity required external IPs first to avoid them being claimed by hosts that don't care...
     'Hosts' : [
-        { 'name' : "vceph1" , 'image' : "Centos7" , 'flavor':"m.ceph" , 'net' : [ ("routed-net" , "vceph1"), ("ceph","*") ], 'script' : "test.sh" },
-        { 'name' : "vceph2" , 'image' : "Centos7" , 'flavor':"m.ceph" , 'net' : [ ("routed-net" , "vceph2"), ("ceph","*") ], 'script' : "test.sh" },
-        { 'name' : "vceph3" , 'image' : "Centos7" , 'flavor':"m.ceph" , 'net' : [ ("routed-net" , "vceph3"), ("ceph","*") ], 'script' : "test.sh" },
-        { 'name' : "vceph-openstack" , 'image' : "Centos7" , 'flavor':"m1.xlarge" , 'net' : [ ("routed-net" , "vceph-openstack"), ("ceph","*") ], 'script' : "test.sh" },
-        { 'name' : "vceph-client" , 'image' : "Centos7" , 'flavor':"m1.medium" , 'net' : [ ("routed-net" , "vceph-client"), ("ceph","*") ], 'script' : "test.sh" },
+        { 'name' : "vceph1" , 'image' : "centos7.2" , 'flavor':"m.ceph" , 'net' : [ ("routed-net" , "vceph1"), ("ceph","*") ], 'script' : "test.sh" },
+        { 'name' : "vceph2" , 'image' : "centos7.2" , 'flavor':"m.ceph" , 'net' : [ ("routed-net" , "vceph2"), ("ceph","*") ], 'script' : "test.sh" },
+        { 'name' : "vceph3" , 'image' : "centos7.2" , 'flavor':"m.ceph" , 'net' : [ ("routed-net" , "vceph3"), ("ceph","*") ], 'script' : "test.sh" },
+        { 'name' : "vceph-openstack" , 'image' : "centos7.2" , 'flavor':"m1.xlarge" , 'net' : [ ("routed-net" , "vceph-openstack"), ("ceph","*") ], 'script' : "test.sh" },
+        { 'name' : "vceph-client" , 'image' : "centos7.2" , 'flavor':"m1.medium" , 'net' : [ ("routed-net" , "vceph-client"), ("ceph","*") ], 'script' : "test.sh" },
     ]
 }
