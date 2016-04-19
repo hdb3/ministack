@@ -173,8 +173,8 @@ router_needed = {}
 if (args.resume or args.suspend):
     pass
 elif ( not spec['Networks']):
-    print "Error: no Networks in spec file"
-    sys.exit(1)
+    print "warning: no Networks in spec file"
+    # sys.exit(1)
 else:
     for net in spec['Networks']:
         net_name = net['name']
