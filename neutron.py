@@ -205,15 +205,16 @@ class Neutron:
         assert (len(subnet_response['subnets']) == 1)
         subnet_id = subnet_response['subnets'][0]['id']
 
-        if 'gateway' in net and self.external_network_name:
+        if 'gateway' in net:
             if 'vlan' in net:
-                print "*** Warning: adding router for VLAN network - is this really wanted!!!!?"
-            print "adding a router for network %s to external network" % name
-            router_id = create_router(name,self.external_network_id)
-            add_interface_router(router_id,subnet_id)
-        else:
-            print "Not creating router for external network because no external network is defined"
-            print "The network will still be created - to suppress this message remove the gateway from the network definitiion"
+                print "*** Error: not adding router for VLAN network - is this really wanted!!!!?"
+            elif self.external_network_name:
+                print "adding a router for network %s to external network" % name
+                router_id = create_router(name,self.external_network_id)
+                add_interface_router(router_id,subnet_id)
+            else:
+                print "Not creating router for external network because no external network is defined"
+                print "The network will still be created - to suppress this message remove the gateway from the network definitiion"
     
         print "Network build completed"
     
